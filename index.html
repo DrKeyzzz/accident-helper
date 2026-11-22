@@ -138,7 +138,7 @@ html{background:var(--bg)}
 <div class="toast" id="toast" hidden></div>
 <script>
 const KEY="accident-helper-v2";
-const INFO={myClaim:"My claim number (my insurance)",policeReport:"Police report number",otherInsurer:"Other driver's insurance company",otherInsPhone:"Their claims phone number",otherClaim:"Claim number (their insurance)",adjName:"Adjuster's name",adjPhone:"Adjuster's phone",adjEmail:"Adjuster's email",myEmail:"My email"};
+const INFO={crashTime:"About what time was the accident?",myClaim:"My claim number (my insurance)",policeReport:"Police report number",otherInsurer:"Other driver's insurance company",otherInsPhone:"Their claims phone number",otherClaim:"Claim number (their insurance)",adjName:"Adjuster's name",adjPhone:"Adjuster's phone",adjEmail:"Adjuster's email",myEmail:"My email"};
 const FACTS={date:"November 22, 2026",place:"Ventnor Avenue and Black Horse Pike (Albany Avenue) in Atlantic City",car:"white 2011 Ford Fiesta",other:"gray Chevrolet Colorado pickup"};
 let S={done:{},info:{},pos:0,started:false};
 try{const r=localStorage.getItem(KEY); if(r) S=Object.assign(S,JSON.parse(r));}catch(e){}
@@ -152,15 +152,24 @@ function mailto(to,sub,body){return "mailto:"+encodeURIComponent(to||"")+"?subje
 function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,1800);}
 function copyText(x){const ok=()=>toast("Copied");try{navigator.clipboard.writeText(x).then(ok,fb);}catch(e){fb();}function fb(){const a=document.createElement("textarea");a.value=x;document.body.appendChild(a);a.select();try{document.execCommand("copy");ok();}catch(e){toast("Press and hold the words to copy");}a.remove();}}
 
-/* Four steps, in the order they really happen. Nothing to fill in unless she wants to. */
+/* Five steps, in the order they really happen. Nothing to fill in unless she wants to. */
 const STEPS=[
  {id:"myins", when:"Today · 1 phone call", title:"Call your insurance",
   list:["Find your insurance card or app. The phone number is on it.","Call and read this:"],
   say:"Hi, I was in a car accident on {date} at {place}. I'm okay. Another driver hit the driver's side of my car while I was turning left on a green arrow.\n\nCan you note it on my policy and give me a claim or reference number?",
-  why:"It's a quick call that keeps your policy in good standing. Your own insurance won't pay for your car, so the money comes from the other driver's insurance in step 3.",
+  why:"It's a quick call that keeps your policy in good standing. Your own insurance won't pay for your car, so the money comes from the other driver's insurance in step 4.",
   save:["myClaim"]},
+ {id:"camera", when:"Monday morning · 1 phone call", title:"Save the camera video",
+  list:["There's a city camera at that corner. The video can prove what happened, but the city erases it after a while.","Call Atlantic City Police first thing Monday (they open at 8) and ask for Records. Or I can make this call for you. Just ask me.","Say this:"],
+  say:"Hi, I was in a car accident on {date}[[ at about {crashTime}]] at {place}. There's a city camera there. Can you please save that video so it isn't erased? And how do I request a copy?",
+  call:["Atlantic City Police","6093476426","609-347-6426"],
+  mail:{subject:"Please save traffic camera video, crash on November 22, 2026",
+   body:"Hello,\n\nI was the driver of a {car} in a crash on {date}[[ at about {crashTime}]] at {place}. A {other} was also involved, and an officer came to the scene.\n\nPlease preserve all city camera video of this intersection from around the time of the crash, so it is not recorded over. I am also requesting a copy of that video under the Open Public Records Act, and a copy of the crash report when it is ready.\n\nThank you"},
+  extra:"After you call, send this email the way they tell you, so there's a record that you asked.",
+  why:"If the video shows the truck turned into you on your green arrow, it can settle the whole claim. It may only be kept a short time, so this one can't wait.",
+  save:["crashTime"]},
  {id:"police", when:"In about 1 to 2 weeks", title:"Get the police report",
-  list:["The report has the other driver's insurance on it. It takes about 1 to 2 weeks.","Call Atlantic City Police and ask:"],
+  list:["The report has the other driver's insurance on it. It takes about 1 to 2 weeks.","Call Atlantic City Police and ask (or I can call for you):"],
   say:"Hi, I was in a car accident on {date} at {place}. Is my crash report ready, and how do I get a copy?",
   call:["Atlantic City Police","6093476426","609-347-6426"],
   extra:"Or pick it up in person: Public Safety Building, 2715 Atlantic Ave. Monday to Friday, 8:00 to 3:30. Bring your ID. There is a small fee.",
@@ -236,12 +245,13 @@ function render(){
   if(s.call) h+=`<a class="btn primary" href="tel:${s.call[1]}">Call ${esc(s.call[0])}&nbsp;<span style="white-space:nowrap">${esc(s.call[2])}</span></a>`;
   if(s.callKey&&v(s.callKey)) h+=`<a class="btn primary" href="tel:${esc(v(s.callKey).replace(/[^0-9+]/g,""))}">Call ${esc(v(s.callKey))}</a>`;
   if(s.mailMe) h+=`<button type="button" class="primary" id="mm">Email me</button>`;
+  if(s.mail) h+=`<button type="button" class="primary" id="mailBtn">Open the email, ready to send</button>`;
   if(s.say) h+=`<button type="button" id="cp">Copy the words</button>`;
   h+=`</div>`;
   if(s.extra) h+=`<p class="muted">${esc(s.extra)}</p>`;
   if(s.link) h+=`<p><a href="${s.link[1]}" target="_blank" rel="noopener">${esc(s.link[0])}</a> <span class="muted">(Online Forms, then Accident Reports)</span></p>`;
   h+=`<div class="why"><b>Why</b>${esc(s.why)}</div>`;
-  if(s.save) h+=`<details><summary>Got a number? Save it here (you don't have to)</summary><div class="fields">${s.save.map(k=>`<label class="f">${esc(INFO[k])}<input data-k="${k}" id="f_${k}" value="${esc(v(k))}"></label>`).join("")}</div></details>`;
+  if(s.save) h+=`<details><summary>${s.id==="camera"?"Know the time? Add it here (you don't have to)":"Got a number? Save it here (you don't have to)"}</summary><div class="fields">${s.save.map(k=>`<label class="f">${esc(INFO[k])}<input data-k="${k}" id="f_${k}" value="${esc(v(k))}"></label>`).join("")}</div></details>`;
   h+=`<button type="button" class="primary big done-btn" id="done">${esc(s.doneLabel||"Done")} ✓</button>
    ${s.noLater?"":`<button type="button" class="notyet" id="later">${esc(s.notYet||"Not now")}</button>`}</div>`;
   h+=`<div class="upnext"><div class="t">All the steps</div>${STEPS.map((x,i)=>i===S.pos?`<div class="up cur"><span>${i+1}</span>${esc(x.title)}<em>you're here</em></div>`:S.done[x.id]?`<div class="up ok"><span>✓</span>${esc(x.title)}</div>`:`<button type="button" class="up" data-go="${i}"><span>${i+1}</span>${esc(x.title)}<em>${esc(x.when)}</em></button>`).join("")}</div>`;
@@ -249,6 +259,7 @@ function render(){
   app.querySelectorAll("input[data-k]").forEach(i=>i.oninput=()=>{S.info[i.dataset.k]=i.value;save(); if(s.say) $("#say").textContent=fillT(s.say);});
   if($("#cp")) $("#cp").onclick=()=>copyText(fillT(s.say));
   if($("#mm")) $("#mm").onclick=emailMe;
+  if($("#mailBtn")) $("#mailBtn").onclick=()=>go(mailto("",s.mail.subject,fillT(s.mail.body)));
   $("#done").onclick=()=>{S.done[s.id]=true; toast("Nice. One less thing."); const n=nextOpen(S.pos); if(n>=0) S.pos=n; save(); setTimeout(render,500);};
   if($("#later")) $("#later").onclick=()=>{toast("That's okay. Here's what's coming up."); const u=$(".upnext"); if(u) u.scrollIntoView({behavior:"smooth",block:"center"});};
   app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{S.pos=+b.dataset.go;save();render();});
