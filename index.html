@@ -2,17 +2,302 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
 <title>Accident Helper</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800&family=Inter:wght@400;500;600&display=swap">
 <style>
-:root{--bg:#FBF5F7;--ink:#3B2A3A}
-@media (prefers-color-scheme: dark){:root{--bg:#1E171F;--ink:#F5E9F0}}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--ink)}
-body{display:flex;align-items:center;justify-content:center;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding:24px;box-sizing:border-box;text-align:center}
-p{font-size:1.6rem;font-weight:700;line-height:1.4;margin:0}
+/* Layout: one calm column, a sticky progress bar, one step card at a time. Palette: blush and dusty rose with a lavender wash, soft like watercolor. */
+:root{
+  --bg:#FBF5F7; --surface:#FFFFFF; --ink:#3B2A3A; --muted:#7C6679; --line:#F0DFE6;
+  --accent:#AE5C7E; --accent-soft:#F8E6EE; --accent-ink:#FFFFFF;
+  --done:#AE5C7E; --done-soft:#F8E6EE; --warn:#6B58A6; --warn-soft:#EEE8F8;
+  --hook:linear-gradient(135deg,#C97895 0%,#AC73A3 50%,#8A80C0 100%);
+  --display:"Nunito",ui-rounded,"Segoe UI",system-ui,sans-serif;
+  --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1E171F; --surface:#2A202C; --ink:#F5E9F0; --muted:#C2ABBD; --line:#3F3143;
+  --accent:#EC9DBC; --accent-soft:#45283B; --accent-ink:#2B1220;
+  --done:#EC9DBC; --done-soft:#45283B; --warn:#C7B8F2; --warn-soft:#342C4D;
+  --hook:linear-gradient(135deg,#8F4766 0%,#7A4B82 50%,#5D5197 100%); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#1E171F; --surface:#2A202C; --ink:#F5E9F0; --muted:#C2ABBD; --line:#3F3143;
+  --accent:#EC9DBC; --accent-soft:#45283B; --accent-ink:#2B1220;
+  --done:#EC9DBC; --done-soft:#45283B; --warn:#C7B8F2; --warn-soft:#342C4D;
+  --hook:linear-gradient(135deg,#8F4766 0%,#7A4B82 50%,#5D5197 100%); color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.55;margin:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{padding-block:12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:800;font-size:1.1rem;flex:1;min-width:0;white-space:nowrap}
+header.top .ghost{padding:6px 6px}
+header.top .row{gap:2px;flex-wrap:nowrap}
+header.top .ghost{font-size:.85rem}
+.bar{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .4s}
+.meta{font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+button,.btn{font:inherit;font-weight:600;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:10px 14px;cursor:pointer;min-height:44px}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.big{width:100%;font-size:1.1rem;padding:14px}
+.ghost{background:transparent;border-color:transparent;color:var(--accent);padding:8px 10px}
+.small{min-height:36px;padding:6px 10px;font-size:.9rem}
+main{padding-top:18px;display:flex;flex-direction:column;gap:16px}
+.stage-label{font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.2}
+h1{font-size:1.6rem} h2{font-size:1.35rem} h3{font-size:1.05rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:14px}
+.card p{margin:0}
+.why{background:var(--accent-soft);border-radius:12px;padding:12px 14px;font-size:.95rem}
+.why b{display:block;font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;margin-bottom:2px}
+.warn{background:var(--warn-soft);color:var(--ink);border-radius:12px;padding:12px 14px;font-size:.95rem}
+.warn b{color:var(--warn)}
+ul.do{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+.script{background:var(--bg);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.script .t{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+.script pre{white-space:pre-wrap;word-break:break-word;margin:0;font-family:var(--body);font-size:.95rem}
+.fields{display:flex;flex-direction:column;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:.9rem;font-weight:600}
+input,textarea,select{font:inherit;font-weight:400;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+textarea{min-height:90px;resize:vertical}
+.check{display:flex;gap:12px;align-items:center;padding:14px;border-radius:14px;border:2px solid var(--line);cursor:pointer;font-weight:600}
+.check input{width:26px;height:26px;accent-color:var(--done);flex:none}
+.check.on{border-color:var(--done);background:var(--done-soft)}
+.nav{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dots button{min-height:32px;min-width:32px;padding:0 8px;border-radius:99px;font-size:.85rem;font-variant-numeric:tabular-nums}
+.dots button.full{background:var(--done-soft);border-color:var(--done);color:var(--done)}
+.dots button.cur{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.list{display:flex;flex-direction:column;gap:14px}
+.list .st{display:flex;flex-direction:column;gap:6px}
+.list a{color:var(--ink);text-decoration:none;display:flex;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface)}
+.list a.ok{color:var(--muted);text-decoration:line-through}
+.list a span{flex:none;width:1.4em;color:var(--done)}
+table{border-collapse:collapse;width:100%;font-size:.95rem;font-variant-numeric:tabular-nums}
+td,th{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left}
+td.n,th.n{text-align:right}
+.tbl{overflow-x:auto}
+.toast{width:max-content;max-width:calc(100% - 32px);text-align:center;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;z-index:20}
+.celebrate{text-align:center}
+.acts{display:flex;flex-direction:column;gap:8px}
+.acts button{width:100%;font-size:1.02rem}
+.today{background:var(--warn-soft);color:var(--warn);font-weight:700;font-size:.8rem;padding:4px 10px;border-radius:99px;white-space:nowrap}
+button:disabled{opacity:.55;cursor:default}
+.muted{color:var(--muted);font-size:.9rem}
+@media (prefers-reduced-motion: reduce){.bar>i{transition:none}}
 </style>
 </head>
 <body>
-<p>I tried to help you.. ask Nick</p>
+<style>
+.hook{font-family:var(--display);font-weight:800;font-size:1.6rem;line-height:1.2;text-wrap:balance;background:var(--hook);color:#FFFFFF;border-radius:22px;padding:24px 20px}
+.when{display:inline-block;background:var(--warn-soft);color:var(--warn);font-weight:700;font-size:.85rem;padding:4px 12px;border-radius:99px}
+.say{font-size:1.15rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;font-family:var(--body)}
+.acts{display:flex;flex-direction:column;gap:10px}
+.acts .btn,.acts button{width:100%;text-align:center;text-decoration:none;font-size:1.05rem;display:flex;align-items:center;justify-content:center}
+a.btn.primary{color:var(--accent-ink)}
+details{border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details[open] summary{margin-bottom:10px}
+.done-btn{font-size:1.2rem;padding:16px}
+.notyet{background:transparent;border:none;color:var(--muted);text-decoration:underline;min-height:40px}
+.stepn{font-size:.85rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.biglist{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px;font-size:1.05rem}
+.helpcard{display:flex;flex-direction:column;gap:10px}
+.heart{border-color:transparent;font-size:1.15rem;gap:12px;background:linear-gradient(180deg,var(--surface),var(--accent-soft))}
+.heart h1{font-size:1.9rem}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pgrid a{display:flex;flex-direction:column;gap:4px;color:var(--ink);text-decoration:none;font-size:.85rem;min-width:0}
+.pgrid img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:12px;display:block}
+.homebtn{font-family:var(--display);font-weight:800;font-size:1.05rem;color:var(--ink);padding-left:0}
+.upnext{display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.upnext .t{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700}
+.up{display:flex;align-items:center;gap:10px;text-align:left;width:100%;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;font-size:1rem}
+.up span{flex:none;width:1.8em;height:1.8em;border-radius:99px;display:inline-flex;align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent);font-size:.85rem}
+.up em{margin-left:auto;font-style:normal;font-weight:500;font-size:.8rem;color:var(--muted);text-align:right}
+.up.cur{border-color:var(--accent);background:var(--accent-soft)}
+.up.ok{color:var(--muted)}
+.sig{font-family:var(--display);font-weight:800;font-size:1.2rem;text-align:right}
+html{background:var(--bg)}
+.allset{font-family:var(--display);font-weight:800;font-size:1.4rem}
+</style>
+<header class="top"><div class="wrap">
+  <div class="row">
+    <div class="brand"><button class="ghost small homebtn" id="btnHome" type="button" aria-label="Home">⌂ Home</button></div>
+    <button class="ghost small" id="btnPhotos" type="button">Photos</button>
+    <button class="ghost small" id="btnHelp" type="button">Help</button>
+    <button class="ghost small" id="btnMail" type="button">Email me</button>
+  </div>
+  <div class="bar" aria-hidden="true"><i id="barFill"></i></div>
+</div></header>
+<div class="wrap"><main id="app"></main></div>
+<div class="toast" id="toast" hidden></div>
+<script>
+const KEY="accident-helper-v3";
+const INFO={crashTime:"About what time was the accident?",myClaim:"My claim number (my insurance)",policeReport:"Police report number",otherInsurer:"Other driver's insurance company",otherInsPhone:"Their claims phone number",otherClaim:"Claim number (their insurance)",adjName:"Adjuster's name",adjPhone:"Adjuster's phone",adjEmail:"Adjuster's email",myEmail:"My email"};
+const FACTS={date:"November 22, 2026",place:"Ventnor Avenue and Black Horse Pike (Albany Avenue) in Atlantic City",car:"white 2011 Ford Fiesta",other:"gray Chevrolet Colorado pickup"};
+let S={done:{},info:{},pos:0,started:false};
+try{const r=localStorage.getItem(KEY); if(r) S=Object.assign(S,JSON.parse(r));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+const v=k=>(S.info[k]||"").trim();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fillT=t=>t.replace(/\[\[(.*?)\]\]/g,(m,seg)=>[...seg.matchAll(/\{(\w+)\}/g)].some(x=>!FACTS[x[1]]&&!v(x[1]))?"":seg).replace(/\{(\w+)\}/g,(m,k)=>FACTS[k]||v(k)||"");
+function go(u){try{window.location.href=u;}catch(e){}}
+function mailto(to,sub,body){return "mailto:"+encodeURIComponent(to||"")+"?subject="+encodeURIComponent(sub)+"&body="+encodeURIComponent(body);}
+function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,1800);}
+function copyText(x){const ok=()=>toast("Copied");try{navigator.clipboard.writeText(x).then(ok,fb);}catch(e){fb();}function fb(){const a=document.createElement("textarea");a.value=x;document.body.appendChild(a);a.select();try{document.execCommand("copy");ok();}catch(e){toast("Press and hold the words to copy");}a.remove();}}
+
+/* Five steps, in the order they really happen. Nothing to fill in unless she wants to. */
+const STEPS=[
+ {id:"myins", when:"Today · 1 phone call", title:"Call your insurance",
+  list:["Find your insurance card or app. The phone number is on it.","Call and read this:"],
+  say:"Hi, I was in a car accident on {date} at {place}. I'm okay. Another driver hit the driver's side of my car while I was turning left on a green arrow.\n\nCan you note it on my policy and give me a claim or reference number?",
+  why:"It's a quick call that keeps your policy in good standing. Your own insurance won't pay for your car, so the money comes from the other driver's insurance in step 4.",
+  save:["myClaim"]},
+ {id:"camera", when:"Monday morning · 1 phone call", title:"Save the camera video",
+  list:["There's a city camera at that corner. The video can prove what happened, but the city erases it after a while.","Call Atlantic City Police first thing Monday (they open at 8) and ask for Records. Or I can make this call for you. Just ask me.","Say this:"],
+  say:"Hi, I was in a car accident on {date}[[ at about {crashTime}]] at {place}. There's a city camera there. Can you please save that video so it isn't erased? And how do I request a copy?",
+  call:["Atlantic City Police","6093476426","609-347-6426"],
+  mail:{subject:"Please save traffic camera video, crash on November 22, 2026",
+   body:"Hello,\n\nI was the driver of a {car} in a crash on {date}[[ at about {crashTime}]] at {place}. A {other} was also involved, and an officer came to the scene.\n\nPlease preserve all city camera video of this intersection from around the time of the crash, so it is not recorded over. I am also requesting a copy of that video under the Open Public Records Act, and a copy of the crash report when it is ready.\n\nThank you"},
+  extra:"After you call, send this email the way they tell you, so there's a record that you asked.",
+  why:"If the video shows the truck turned into you on your green arrow, it can settle the whole claim. It may only be kept a short time, so this one can't wait.",
+  save:["crashTime"]},
+ {id:"police", when:"In about 1 to 2 weeks", title:"Get the police report",
+  list:["The report has the other driver's insurance on it. It takes about 1 to 2 weeks.","Call Atlantic City Police and ask (or I can call for you):"],
+  say:"Hi, I was in a car accident on {date} at {place}. Is my crash report ready, and how do I get a copy?",
+  call:["Atlantic City Police","6093476426","609-347-6426"],
+  extra:"Or pick it up in person: Public Safety Building, 2715 Atlantic Ave. Monday to Friday, 8:00 to 3:30. Bring your ID. There is a small fee.",
+  link:["Or get it online","https://www.acnj.gov/forms"],
+  why:"You need this to find the other driver's insurance. Everything after this depends on it.",
+  save:["policeReport"], notYet:"Not ready yet"},
+ {id:"theirins", when:"After you have the report", title:"Call the other driver's insurance",
+  list:["Look on the police report for the other driver's insurance company.","You don't have to do this one alone. I can find their number and help you, or even make the call for you. Just ask me.","If I call for you, you only need to be on the line for a moment to say: \"I give David permission to talk about my claim.\"","If you'd rather call yourself, here's what to say:"],
+  say:"Hi, I want to open a property damage claim. Your driver hit my car on {date} at {place}. They were driving a {other}. My car is a {car}.[[ The police report number is {policeReport}.]]\n\nCan you give me a claim number and the adjuster's name?",
+  why:"This is the claim that can pay to fix your car.",
+  save:["otherInsurer","otherInsPhone","otherClaim","adjName","adjPhone","adjEmail"], callKey:"otherInsPhone"},
+ {id:"wait", when:"Over the next few weeks", title:"Now just wait for their call",
+  list:["Leave the car as it is until they've seen it. When they ask to inspect it, just say yes.","When they make an offer, ask for it by email. Before you agree, tap Email me and send it to me so I can look it over."],
+  why:"That's it. You've done the hard part.",
+  mailMe:true, doneLabel:"Got it", noLater:true}
+];
+const HELP=[
+ {t:"They said no", first:true,
+  d:"Insurance companies often get it wrong the first time. You don't have to argue. Just say this, then send the email below with your photos (tap Photos to get them).",
+  phone:"I don't agree. I had a green arrow, and your driver turned right on red into my car. Please send me your decision in writing, and I'd like a supervisor to review it.",
+  body:"Hello,\n\nI disagree with the decision on my claim[[ ({otherClaim})]]. I had a green left turn arrow, and your driver turned right on red into the side of my car. My photos are attached. Please have a supervisor review it and send me the result in writing.\n\nThank you",
+  after:"You can take the other driver to small claims court for up to $5,000. No lawyer needed, and the fee is small. His insurance has to show up and defend him, so many settle once you file. Let's talk it over first.",
+  link:["How small claims works (NJ Courts)","https://www.njcourts.gov/self-help/small-claims-court"]},
+ {t:"They're not calling me back", d:"Wait 3 days, then send this. If 2 weeks go by, ask for a supervisor.",
+  body:"Hello,\n\nI'm following up on my claim[[ ({otherClaim})]] for the accident on {date}. I haven't heard back. Please tell me the status and the next step.\n\nThank you"},
+ {t:"The offer is too low", d:"Get a price from a body shop, then send this with it.",
+  body:"Hello,\n\nThank you for the offer on my claim[[ ({otherClaim})]]. It doesn't cover the damage. A body shop estimate is attached. Please send me a new offer.\n\nThank you"},
+ {t:"They say the car is totaled", d:"That means they'll pay what the car was worth. Ask how they got their number.",
+  body:"Hello,\n\nFor my claim[[ ({otherClaim})]], please send me the valuation report for my {car}, including the similar cars you compared it to.\n\nThank you"}
+];
+
+function summary(){
+  const L=["MY ACCIDENT CLAIM","","Accident: "+FACTS.date+", "+FACTS.place,"My car: "+FACTS.car,"Other car: "+FACTS.other,""];
+  Object.entries(INFO).forEach(([k,l])=>{ if(v(k)) L.push(l+": "+v(k)); });
+  L.push("","Steps done:");
+  STEPS.forEach((s,i)=>L.push((S.done[s.id]?"[x] ":"[ ] ")+(i+1)+". "+s.title));
+  return L.join("\n");
+}
+function emailMe(){ go(mailto(v("myEmail"),"My accident claim",summary())); }
+let view="step";
+function updateBar(){ const n=STEPS.filter(s=>S.done[s.id]).length; $("#barFill").style.width=(n/STEPS.length*100)+"%"; }
+function nextOpen(from){ for(let i=1;i<=STEPS.length;i++){ const j=(from+i)%STEPS.length; if(!S.done[STEPS[j].id]) return j; } return -1; }
+
+function render(){
+  updateBar(); const app=$("#app"); window.scrollTo({top:0});
+  if(!S.started||view==="home"){
+    app.innerHTML=`<div class="card heart"><h1>You're safe. You're okay.</h1>
+    <p>That's the only thing that really matters today.</p>
+    <p>A car can be fixed or replaced. You can't. Everyone who loves you is just glad you walked away from it.</p>
+    <p>Take a breath. You don't have to figure this all out today, and you don't have to do it alone. I'm here to help.</p>
+    <p class="sig">David</p></div>
+    <div class="hook">When you're ready: if you do this right, the other driver's insurance could pay to fix your car, even if it's only part of the cost.</div>
+    <div class="card">
+    <p>This shows you one step at a time. Most steps are one phone call, and the words are written for you.</p>
+    <p>You don't need anything to start. I already have all the photos of both cars and a video of yours. They're saved here under <b>Photos</b>, so you never have to look for them.</p>
+    <button class="primary big done-btn" id="go" type="button">${S.started?"Go to my next step":"Start"}</button></div>`;
+    $("#go").onclick=()=>{S.started=true;view="step";save();render();}; return;
+  }
+  if(view==="help") return renderHelp(app);
+  if(view==="photos") return renderPhotos(app);
+  if(STEPS.every(s=>S.done[s.id])){
+    app.innerHTML=`<div class="card"><div class="allset">You did it.</div><p>Every step is done. Keep the emails from the insurance company until you're paid.</p><button class="primary big" id="m" type="button">Email me everything</button><button type="button" id="again">Look at the steps again</button></div>`;
+    $("#m").onclick=emailMe; $("#again").onclick=()=>{S.pos=0; STEPS.forEach(s=>S.done[s.id]=false); save(); render();}; return;
+  }
+  S.pos=Math.max(0,Math.min(STEPS.length-1,S.pos||0)); if(S.done[STEPS[S.pos].id]) S.pos=nextOpen(S.pos);
+  const s=STEPS[S.pos];
+  let h=`<div class="card">
+   <div class="row"><span class="stepn" style="flex:1">Step ${S.pos+1} of ${STEPS.length}</span><span class="when">${esc(s.when)}</span></div>
+   <h1>${esc(s.title)}</h1>
+   <ol class="biglist">${s.list.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`;
+  if(s.say) h+=`<div class="script"><pre class="say" id="say">${esc(fillT(s.say))}</pre></div>`;
+  h+=`<div class="acts">`;
+  if(s.call) h+=`<a class="btn primary" href="tel:${s.call[1]}">Call ${esc(s.call[0])}&nbsp;<span style="white-space:nowrap">${esc(s.call[2])}</span></a>`;
+  if(s.callKey&&v(s.callKey)) h+=`<a class="btn primary" href="tel:${esc(v(s.callKey).replace(/[^0-9+]/g,""))}">Call ${esc(v(s.callKey))}</a>`;
+  if(s.mailMe) h+=`<button type="button" class="primary" id="mm">Email me</button>`;
+  if(s.mail) h+=`<button type="button" class="primary" id="mailBtn">Open the email, ready to send</button>`;
+  if(s.say) h+=`<button type="button" id="cp">Copy the words</button>`;
+  h+=`</div>`;
+  if(s.extra) h+=`<p class="muted">${esc(s.extra)}</p>`;
+  if(s.link) h+=`<p><a href="${s.link[1]}" target="_blank" rel="noopener">${esc(s.link[0])}</a> <span class="muted">(Online Forms, then Accident Reports)</span></p>`;
+  h+=`<div class="why"><b>Why</b>${esc(s.why)}</div>`;
+  if(s.save) h+=`<details><summary>${s.id==="camera"?"Know the time? Add it here (you don't have to)":"Got a number? Save it here (you don't have to)"}</summary><div class="fields">${s.save.map(k=>`<label class="f">${esc(INFO[k])}<input data-k="${k}" id="f_${k}" value="${esc(v(k))}"></label>`).join("")}</div></details>`;
+  h+=`<button type="button" class="primary big done-btn" id="done">${esc(s.doneLabel||"Done")} ✓</button>
+   ${s.noLater?"":`<button type="button" class="notyet" id="later">${esc(s.notYet||"Not now")}</button>`}</div>`;
+  h+=`<div class="upnext"><div class="t">All the steps</div>${STEPS.map((x,i)=>i===S.pos?`<div class="up cur"><span>${i+1}</span>${esc(x.title)}<em>you're here</em></div>`:S.done[x.id]?`<div class="up ok"><span>✓</span>${esc(x.title)}</div>`:`<button type="button" class="up" data-go="${i}"><span>${i+1}</span>${esc(x.title)}<em>${esc(x.when)}</em></button>`).join("")}</div>`;
+  app.innerHTML=h;
+  app.querySelectorAll("input[data-k]").forEach(i=>i.oninput=()=>{S.info[i.dataset.k]=i.value;save(); if(s.say) $("#say").textContent=fillT(s.say);});
+  if($("#cp")) $("#cp").onclick=()=>copyText(fillT(s.say));
+  if($("#mm")) $("#mm").onclick=emailMe;
+  if($("#mailBtn")) $("#mailBtn").onclick=()=>go(mailto("",s.mail.subject,fillT(s.mail.body)));
+  $("#done").onclick=()=>{S.done[s.id]=true; toast("Nice. One less thing."); const n=nextOpen(S.pos); if(n>=0) S.pos=n; save(); setTimeout(render,500);};
+  if($("#later")) $("#later").onclick=()=>{toast("That's okay. Here's what's coming up."); const u=$(".upnext"); if(u) u.scrollIntoView({behavior:"smooth",block:"center"});};
+  app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{S.pos=+b.dataset.go;save();render();});
+}
+const PHOTOS=[["fiesta-1.jpg","Your car: driver's side doors"],["fiesta-2.jpg","Your car: broken window and mirror"],["fiesta-3.jpg","Your car: front fender not damaged"],["colorado-1.jpg","Their truck: front"],["colorado-2.jpg","Their truck: front corner"],["colorado-3.jpg","Their truck: passenger side corner"],["colorado-4.jpg","Their truck: fender pushed back"]];
+function renderPhotos(app){
+  app.innerHTML=`<div class="row"><h1 style="flex:1">Photos</h1><button type="button" class="primary small" id="close">Back</button></div>
+  <p class="muted">All the accident photos and the video, in one place. Tap a photo to open it big, then press and hold to save or share it.</p>
+  <div class="pgrid">${PHOTOS.map(([f,c])=>`<a href="photos/${f}" target="_blank" rel="noopener"><img src="photos/${f}" alt="${esc(c)}" loading="lazy"><span>${esc(c)}</span></a>`).join("")}</div>
+  <div class="card"><h2>Video of your car</h2><video src="photos/fiesta-video.mp4" controls playsinline preload="metadata" style="width:100%;max-height:60vh;border-radius:12px;background:#000"></video></div>`;
+  $("#close").onclick=()=>{view="step";render();};
+}
+function renderHelp(app){
+  app.innerHTML=`<div class="row"><h1 style="flex:1">If they give you a hard time</h1><button type="button" class="primary small" id="close">Back</button></div>
+  ${HELP.map((x,i)=>`<div class="card helpcard"><h2>${esc(x.t)}</h2><p>${esc(x.d)}</p>${x.phone?`<div class="script"><div class="t">Say this</div><pre class="say">${esc(x.phone)}</pre></div>`:""}<div class="acts"><button type="button" class="primary" data-m="${i}">Open this email, ready to send</button><button type="button" data-c="${i}">Copy the email</button></div>${x.after?`<div class="why"><b>If they still say no</b>${esc(x.after)}</div>`:""}${x.link?`<p><a href="${x.link[1]}" target="_blank" rel="noopener">${esc(x.link[0])}</a></p>`:""}</div>`).join("")}
+  <details><summary>Saved numbers and email</summary><div class="fields">${Object.entries(INFO).map(([k,l])=>`<label class="f">${esc(l)}<input data-k="${k}" id="h_${k}" value="${esc(v(k))}"></label>`).join("")}</div></details>`;
+  $("#close").onclick=()=>{view="step";render();};
+  app.querySelectorAll("[data-m]").forEach(b=>b.onclick=()=>{const x=HELP[+b.dataset.m]; go(mailto(v("adjEmail"),"My claim"+(v("otherClaim")?" "+v("otherClaim"):""),fillT(x.body)));});
+  app.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>copyText(fillT(HELP[+b.dataset.c].body)));
+  app.querySelectorAll("input[data-k]").forEach(i=>i.oninput=()=>{S.info[i.dataset.k]=i.value;save();});
+}
+$("#btnHome").onclick=()=>{view="home";render();};
+$("#btnPhotos").onclick=()=>{view=view==="photos"?"step":"photos";render();};
+$("#btnHelp").onclick=()=>{view=view==="help"?"step":"help";render();};
+$("#btnMail").onclick=emailMe;
+render();
+</script>
+<script>
+(function(){
+  var T="https://ntfy.sh/helper-c0b99a759ffd";
+  try{
+    if(location.search.indexOf("me")>-1){localStorage.setItem("ah-owner","1");return;}
+    if(localStorage.getItem("ah-owner"))return;
+    if(sessionStorage.getItem("ah-pinged"))return;
+    sessionStorage.setItem("ah-pinged","1");
+  }catch(e){}
+  try{fetch(T,{method:"POST",body:"Someone just opened the Accident Helper",headers:{"Title":"Accident Helper opened","Tags":"heart"}});}catch(e){}
+})();
+</script>
 </body>
 </html>
